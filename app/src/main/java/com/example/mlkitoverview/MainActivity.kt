@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -68,6 +69,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -78,6 +81,9 @@ import com.example.mlkitoverview.ui.theme.MLkitOverviewTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sqrt
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -105,7 +111,8 @@ class MainActivity : ComponentActivity() {
 
                     }
                 }
-                val viewModel = viewModel<MainViewModel>()
+
+                val viewModel :MainViewModel = viewModel()
                 val bitmaps by viewModel.bitmaps.collectAsState()
                 var isFlipped by remember { mutableStateOf(false) }
                 val rotationAngle by animateFloatAsState(
@@ -119,7 +126,9 @@ class MainActivity : ComponentActivity() {
                     sheetContent = {
                         PhotoBottomSheetContent(
                             bitmaps = bitmaps,applicationContext,
-                            Modifier.height(500.dp)
+                            mainViewModel = viewModel,
+                            Modifier.height(500.dp),
+
                         )
                     }
                 ) { padding ->
@@ -168,7 +177,7 @@ class MainActivity : ComponentActivity() {
                         ){
                             IconButton(
                                 onClick = {
-                                    scope.launch(Dispatchers.Main) {
+                                    scope.launch {
                                         scaffoldState.bottomSheetState.expand()
                                     }
                                 }
