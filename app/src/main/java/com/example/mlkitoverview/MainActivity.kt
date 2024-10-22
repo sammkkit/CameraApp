@@ -2,6 +2,7 @@ package com.example.mlkitoverview
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BlendMode
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.util.Log
@@ -17,21 +18,29 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.BottomSheetScaffold
@@ -51,15 +60,30 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mlkitoverview.ui.theme.MLkitOverviewTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sqrt
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +93,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             MLkitOverviewTheme {
                 val scope = rememberCoroutineScope()
-                var isPermissionGranted by remember { mutableStateOf(false) }
+                var isPermissionGranted by remember { mutableStateOf(true) }
                 RequestPermission { permission->
                     isPermissionGranted = permission
                 }
@@ -87,28 +111,41 @@ class MainActivity : ComponentActivity() {
 
                     }
                 }
-                val viewModel = viewModel<MainViewModel>()
+
+                val viewModel :MainViewModel = viewModel()
                 val bitmaps by viewModel.bitmaps.collectAsState()
                 var isFlipped by remember { mutableStateOf(false) }
                 val rotationAngle by animateFloatAsState(
                     targetValue = if (isFlipped) 180f else 0f
                 )
+                var isAnimatingBorder by remember { mutableStateOf(false) }
                 BottomSheetScaffold(
                     scaffoldState = scaffoldState,
                     sheetPeekHeight = 0.dp,
                     modifier = Modifier.fillMaxSize(),
                     sheetContent = {
-                        PhotoBottomSheetContent(bitmaps = bitmaps,applicationContext)
+                        PhotoBottomSheetContent(
+                            bitmaps = bitmaps,applicationContext,
+                            mainViewModel = viewModel,
+                            Modifier.height(500.dp),
+
+                        )
                     }
                 ) { padding ->
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(padding)
+                            .border(
+                                2.dp,
+                                if (isAnimatingBorder) Color.Red else Color.White
+                                , RoundedCornerShape(40.dp))
                     ) {
                         CameraPreview(
                             controller = controller,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+
                         )
                         IconButton(
                             onClick = {
@@ -154,11 +191,16 @@ class MainActivity : ComponentActivity() {
                             IconButton(
                                 onClick = {
                                     MediaPlayer.create(applicationContext, R.raw.camera_shutter_sound).start()
+                                    isAnimatingBorder = true
                                     TakePhoto(
                                         context = applicationContext,
                                         controller = controller
                                     ) { bitmap ->
                                         viewModel.addBitmap(bitmap)
+                                    }
+                                    scope.launch {
+                                        delay(1000)
+                                        isAnimatingBorder = false
                                     }
                                 }
                             ) {
@@ -189,6 +231,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 private fun TakePhoto(
     context: Context,
     controller: LifecycleCameraController,
