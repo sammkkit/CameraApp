@@ -12,27 +12,35 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 
 @Composable
-fun RequestPermission(onResult: (Boolean)->Unit) {
+fun RequestPermission(onResult: (Boolean) -> Unit) {
     val context = LocalContext.current
 
     val isPermissionGranted = remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(context,Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
         )
 
     }
 
     val requestLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-        onResult = {
-            isPermissionGranted.value = it
-            onResult(it)
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        onResult = { permissions ->
+            isPermissionGranted.value = permissions.entries.all { it.value }
+            onResult(isPermissionGranted.value)
         }
     )
     LaunchedEffect(Unit) {
-        if(!isPermissionGranted.value) {
-            requestLauncher.launch(Manifest.permission.CAMERA)
-        }else{
+        if (!isPermissionGranted.value) {
+            requestLauncher.launch(
+                arrayOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.RECORD_AUDIO
+                )
+            )
+        } else {
             onResult(true)
         }
     }
