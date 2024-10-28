@@ -86,6 +86,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
+import com.example.mlkitoverview.Navigation.NavGraph
 import com.example.mlkitoverview.landmarkML.CameraPreviewMl
 import com.example.mlkitoverview.landmarkML.CameraScreenML
 import com.example.mlkitoverview.ui.theme.MLkitOverviewTheme
@@ -134,7 +136,7 @@ class MainActivity : ComponentActivity() {
                     targetValue = if (isFlipped) 180f else 0f
                 )
                 var isAnimatingBorder by remember { mutableStateOf(false) }
-                CameraScreenML(applicationContext)
+                NavGraph(context = applicationContext, navController = rememberNavController())
 //                BottomSheetScaffold(
 //                    scaffoldState = scaffoldState,
 //                    sheetPeekHeight = 0.dp,
