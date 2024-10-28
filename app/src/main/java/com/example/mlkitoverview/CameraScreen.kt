@@ -34,6 +34,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,6 +42,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -50,10 +52,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -109,6 +113,7 @@ fun CameraScreen(
         //do something
     }
     var isRecording by remember { mutableStateOf(false) }
+    var recodingTime by remember { mutableStateOf("00:00") }
     val scaffoldState = rememberBottomSheetScaffoldState()
     val controller = remember {
         LifecycleCameraController(context).apply {
@@ -120,7 +125,22 @@ fun CameraScreen(
 
         }
     }
+    LaunchedEffect(isRecording) {
+        scope.launch {
+            var seconds = 0
+            while (isRecording){
+                delay(1000)
+                seconds++
+                val hours = seconds / 3600
+                val minutes = (seconds % 3600) / 60
+                val secs = seconds % 60
 
+                val formattedtime = String.format("%02d:%02d:%02d", secs, minutes, hours)
+                recodingTime = formattedtime
+            }
+        }
+
+    }
     val viewModel: MainViewModel = viewModel()
     val bitmaps by viewModel.bitmaps.collectAsState()
     var isFlipped by remember { mutableStateOf(false) }
@@ -157,15 +177,28 @@ fun CameraScreen(
 
             )
             if (isRecording) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .padding(35.dp)
                         .fillMaxWidth()
-                        .height(4.dp)
-                        .align(Alignment.TopCenter)
-                        .background(Color.Red)
-                        .clip(RoundedCornerShape(40.dp))
-                )
+                        .padding(top = 105.dp, end = 16.dp), // Align closer to the top-right corner
+                    horizontalArrangement = Arrangement.End, // Arrange items to the end of the row
+                    verticalAlignment = Alignment.CenterVertically // Center align vertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(18.dp) // Slightly larger size for better visibility
+                            .clip(CircleShape) // Perfect circle
+                            .background(Color.Red) // Red background for recording indicator
+                    )
+                    Spacer(modifier = Modifier.width(8.dp)) // Space between the dot and text
+
+                    Text(
+                        text = recodingTime,
+                        color = Color.White // White color for contrast
+                    )
+                }
+
+
             }
             IconButton(
                 onClick = {
@@ -244,6 +277,7 @@ fun CameraScreen(
                         modifier = Modifier.size(32.dp)
                     )
                 }
+
                 IconButton(
                     onClick = {
                         isRecording = !isRecording
